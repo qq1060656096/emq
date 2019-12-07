@@ -18,17 +18,24 @@ use Zwei\Emq\Event\EventResultInterface;
 /**
  * Class KafkaConsumer
  * @package Zwei\Emq\Consumer
- * @property RdKafkaConsumer $consumer
+ * @property RdKafkaConsumer $consumerQueue
  */
 class KafkaConsumer extends ConsumerAbstract
 {
+    /**
+     * @param RdKafkaConsumer $consumerQueue
+     */
+    public function setConsumerQueue(RdKafkaConsumer $consumerQueue)
+    {
+        $this->consumerQueue = $consumerQueue;
+    }
     /**
      * 获取消息
      * @return Message
      */
     public function pop()
     {
-        $message = $this->consumer->consume($this->getConsumerConfig()->getTimeoutMs());
+        $message = $this->consumerQueue->consume($this->getConsumerConfig()->getTimeoutMs());
         return $message;
     }
     
@@ -98,7 +105,7 @@ class KafkaConsumer extends ConsumerAbstract
      */
     public function del($message)
     {
-        return $this->consumer->commit($message);
+        return $this->consumerQueue->commit($message);
     }
     
     /*
@@ -113,7 +120,7 @@ class KafkaConsumer extends ConsumerAbstract
             // 4. 异常就记录日志
             try {
                 $message = $this->pop();
-                list($event, $eventResult) = $this->consumer($message);
+                list($event, $eventResult) = $this->consumerQueue($message);
                 $this->sendSuccessEvent($event, $eventResult);
                 $this->del($message);
             } catch (\Exception $e) {
