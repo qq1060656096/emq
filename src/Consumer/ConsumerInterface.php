@@ -7,9 +7,12 @@
  */
 namespace Zwei\Emq\Consumer;
 
+use Monolog\Logger;
 use Zwei\Emq\Config\ConsumerConfig;
+use Zwei\Emq\Connection\ConnectionManager;
 use Zwei\Emq\Event\EventInterface;
 use Zwei\Emq\Event\EventResultInterface;
+use Zwei\Emq\Logger\LoggerManager;
 
 interface ConsumerInterface
 {
@@ -73,14 +76,14 @@ interface ConsumerInterface
     /**
      * 消费日志
      *
-     * @return mixed
+     * @return Logger
      */
     public function getLog();
     
     /**
      * 消费失败日志
      *
-     * @return mixed
+     * @return Logger
      */
     public function getConsumeFailLog();
     
@@ -104,4 +107,17 @@ interface ConsumerInterface
      * @return mixed
      */
     public function addConsumeEvent($eventName, callable $callback);
+    
+    /**
+     * @param ConnectionManager $connectionManager
+     * @return mixed
+     */
+    public function setConnectionManager(ConnectionManager $connectionManager);
+    
+    /**
+     * @param LoggerManager $loggerManager
+     * @return mixed
+     */
+    public function setLoggerManager(LoggerManager $loggerManager);
+
 }

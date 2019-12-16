@@ -9,31 +9,57 @@
 namespace Zwei\Emq\Consumer;
 
 
-use Zwei\Emq\Config\ConsumerConfig;
-use Zwei\Emq\Connection\ConnectionInterface;
+use Zwei\Emq\Connection\ConnectionManager;
+use Zwei\Emq\Consumer\Config\ConsumerConfig;
+use Zwei\Emq\Consumer\Config\KafkaConsumerConfig;
+use Zwei\Emq\Logger\LoggerManager;
 
 abstract class ConsumerAbstract implements ConsumerInterface
 {
     /**
-     * @var ConnectionInterface
+     * @var ConnectionManager
      */
-    protected $connection;
+    protected $connectionManager;
     
+    /**
+     * @var LoggerManager
+     */
+    protected $loggerManager;
     /**
      * @var mixed 消费者
      */
-    protected $consumer;
+    protected $consumerQueue;
     
     /**
-     * @var ConsumerConfig
+     * @var KafkaConsumerConfig
      */
     protected $config;
     
-    public function __construct(ConnectionInterface $connection, ConsumerConfig $config)
+    /**
+     * ConsumerAbstract constructor.
+     *
+     * @param ConsumerConfig $config
+     */
+    public function __construct(ConsumerConfig $config)
     {
-        $this->connection = $connection;
-        $this->config = $config;
-        $this->consumer = $this->connection->createConsumer($this->config);
+        $this->config = new KafkaConsumerConfig($config->getData());
+    }
+    
+    /**
+     * @param ConnectionManager $connectionManager
+     */
+    public function setConnectionManager(ConnectionManager $connectionManager)
+    {
+        $this->connectionManager = $connectionManager;
+    }
+    
+    /**
+     * @param LoggerManager $loggerManager
+     *
+     */
+    public function setLoggerManager(LoggerManager $loggerManager)
+    {
+        $this->loggerManager = $loggerManager;
     }
     
     /**
@@ -77,21 +103,21 @@ abstract class ConsumerAbstract implements ConsumerInterface
     /**
      * 日志
      *
-     * @return string
+     * @inheritdoc
      */
     public function getLog()
     {
-        return $this->getConfig()->getLog();
+        return $this->loggerManager->get($this->getConfig()->getLog());
     }
     
     /**
      * 消费失败日志
      *
-     * @return mixed
+     * @inheritdoc
      */
     public function getConsumeFailLog()
     {
-        return $this->getConfig()->getDeathLog();
+        return $this->loggerManager->get($this->getConfig()->getConsumeFailLog());
     }
     
     /**

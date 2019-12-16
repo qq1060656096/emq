@@ -1,1 +1,1 @@
-# emq
+# emq(Event Message Queue)

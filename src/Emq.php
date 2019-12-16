@@ -9,10 +9,10 @@ namespace Zwei\Emq;
 
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
-use Zwei\Emq\Config\ConnectionConfig;
-use Zwei\Emq\Config\ConsumerConfig;
+use Zwei\Emq\Connection\Config\ConnectionConfig;
 use Zwei\Emq\Connection\ConnectionManager;
-use Zwei\Emq\Connection\KafkaConnection;
+use Zwei\Emq\Connection\KafkaAutoCommitConnection;
+use Zwei\Emq\Consumer\Config\ConsumerConfig;
 use Zwei\Emq\Consumer\ConsumerManager;
 use Zwei\Emq\Logger\Config\LoggerConfig;
 use Zwei\Emq\Logger\LoggerManager;
@@ -48,29 +48,29 @@ class Emq
         $this->connectionManager = new ConnectionManager();
         $this->consumerManager = new ConsumerManager();
         $this->loggerManager = new LoggerManager();
-        $this->initConsumerDrivers();
+        $this->initConnectionDrivers();
         $this->initLoggerDrivers();
     }
     
     /**
      * 初始化驱动
      */
-    protected function initConsumerDrivers()
+    protected function initConnectionDrivers()
     {
         // ****** kafka 驱动 start ******
         // 自动提交
         $this->getConnectionManager()->extend('kafkaAutoCommit', function (ConnectionConfig $config) {
-            return new KafkaConnection($config);
+            return new KafkaAutoCommitConnection($config);
         });
     
         // 手动同步提交
         $this->getConnectionManager()->extend('kafkaHandSyncCommit', function (ConnectionConfig $config) {
-            return new KafkaConnection($config);
+            return new KafkaAutoCommitConnection($config);
         });
     
         // 手动异步提交
         $this->getConnectionManager()->extend('kafkaHandASyncCommit', function (ConnectionConfig $config) {
-            return new KafkaConnection($config);
+            return new KafkaAutoCommitConnection($config);
         });
         // ****** kafka 驱动 end ******
     }
@@ -81,16 +81,18 @@ class Emq
     protected function initLoggerDrivers()
     {
         // 文件日志驱动
-        $this->getLoggerManager()->extend('file', function (FileLoggerConfig $config) {
-            $log = new Logger($config->getName());
-            $log->pushHandler(new StreamHandler($config->getFile()));
+        $this->getLoggerManager()->extend('fileLog', function (LoggerConfig $config) {
+            $fileConfig = new FileLoggerConfig($config->getData());
+            $log = new Logger($fileConfig->getName());
+            $log->pushHandler(new StreamHandler($fileConfig->getFile()));
             return $log;
         });
         
         // 消费者失败文件日志驱动
-        $this->getLoggerManager()->extend('consumeFailFile', function (FileLoggerConfig $config) {
-            $log = new Logger($config->getName());
-            $log->pushHandler(new StreamHandler($config->getFile()));
+        $this->getLoggerManager()->extend('consumeFailFileLog', function (LoggerConfig $config) {
+            $fileConfig = new FileLoggerConfig($config->getData());
+            $log = new Logger($fileConfig->getName());
+            $log->pushHandler(new StreamHandler($fileConfig->getFile()));
             return $log;
         });
     }
@@ -126,7 +128,7 @@ class Emq
     public function addConnection(ConnectionConfig $config)
     {
         $connection = $this->getConnectionManager()->makeDriver($config->getDriver(), $config);
-        $this->getConnectionManager()->add($config->getName(), $connection);
+        $this->getConnectionManager()->add($connection);
     }
     
     /**
@@ -138,10 +140,10 @@ class Emq
     public function addConsumer(ConsumerConfig $config)
     {
         $connection = $config->getConnection();
-        $consumer = $this->getConnectionManager()->get($connection)->createConsumer($config);
+        $consumer = $this->getConnectionManager()->get($config->getConnection())->createConsumer($config);
         $consumer->setConnectionManager($this->getConnectionManager());
         $consumer->setLoggerManager($this->getLoggerManager());
-        $this->getConsumerManager()->add($config->getName(), $consumer);
+        $this->getConsumerManager()->add($consumer);
         return $this;
     }
     

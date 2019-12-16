@@ -61,4 +61,9 @@ trait ManagerTrait
     {
         return Arr::get($this->data, $name);
     }
+    
+    public function getAll()
+    {
+        return Arr::get($this->data, null);
+    }
 }
