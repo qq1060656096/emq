@@ -31,7 +31,7 @@ class RetryEvent extends EventAbstract
      */
     public static function toRetryEvent(EventAbstract $eventAbstract)
     {
-        $obj = new RetryEvent();
+        $obj = new RetryEvent('', [], '');
         $obj->data = $eventAbstract->data;
         return $obj;
     }

@@ -29,7 +29,7 @@ use Zwei\Emq\Exception\Consumer\NotConfigEventCallbackException;
  * @package Zwei\Emq\Consumer
  * @property RdKafkaConsumer $consumerQueue
  */
-class KafkaAutoCommitConsumer extends ConsumerAbstract
+class KafkaAutoCommitConsumer extends KafkaConsumerAbstract
 {
     /**
      * @param RdKafkaConsumer $consumerQueue
@@ -64,10 +64,14 @@ class KafkaAutoCommitConsumer extends ConsumerAbstract
         switch ($message->err) {
             case RD_KAFKA_RESP_ERR_NO_ERROR:
                 $payload = $message->payload;
+                $errorMessage = sprintf("consumer.kafka.message.noError");
+                $this->getLog()->error($errorMessage, [
+                    '$message' => $message,
+                ]);
             break;
             case RD_KAFKA_RESP_ERR__PARTITION_EOF:// 没有消息
                 //                    echo "No more messages; will wait for more\n";
-                $errorMessage = sprintf("consumer.kafka.noMoreMessage");
+                $errorMessage = sprintf("consumer.kafka.message.noMoreMessage");
                 $this->getLog()->error($errorMessage, [
                     '$message' => $message,
                     'errstrs' => $message->errstr(),
@@ -76,7 +80,7 @@ class KafkaAutoCommitConsumer extends ConsumerAbstract
                 break;
             case RD_KAFKA_RESP_ERR__TIMED_OUT:// 超时
                 //                    echo "Timed out\n";
-                $errorMessage = sprintf("consumer.kafka.timeout");
+                $errorMessage = sprintf("consumer.kafka.message.timeout");
                 $this->getLog()->error($errorMessage, [
                     '$message' => $message,
                     'errstrs' => $message->errstr(),
@@ -84,7 +88,7 @@ class KafkaAutoCommitConsumer extends ConsumerAbstract
                 KafkaMessageException::kafkaMessageError($message->errstr(), $message->err);
                 break;
             default:
-                $errorMessage = sprintf("consumer.kafka.error");
+                $errorMessage = sprintf("consumer.kafka.message.error");
                 $this->getLog()->error($errorMessage, [
                     '$message' => $message,
                     'errstrs' => $message->errstr(),
@@ -92,7 +96,7 @@ class KafkaAutoCommitConsumer extends ConsumerAbstract
                 KafkaMessageException::kafkaMessageError($message->errstr(), $message->err);
                 break;
         }
-        $event = new Event($payload);
+        $event = Event::jsonToEvent($payload);
         try {
             nowRetryLabel:
             return $this->consumeEvent($event);
@@ -118,7 +122,7 @@ class KafkaAutoCommitConsumer extends ConsumerAbstract
                     throw $e;
                     break;
             }
-            $message = sprintf("consumer.eventResult.isFail");
+            $message = sprintf("consumer.kafka.message.eventResult.isFail");
             $errorData = [
                 '$event' => $e->getEvent(),
                 '$eventResult' => $e->getEventResult(),
@@ -146,13 +150,13 @@ class KafkaAutoCommitConsumer extends ConsumerAbstract
         
         $callback = $this->getConsumeEvent($event->getName());
         if (is_null($callback)) {
-            $message = sprintf("consumer.eventResult.isFailExit");
+            $message = sprintf("consumer.kafka.message.eventResult.isFailExit");
             $this->getLog()->error($message, ['$callback' => $callback]);
             NotConfigEventCallbackException::notConfigEventCallback();
         }
     
         if (!is_callable($callback)) {
-            $message = sprintf("consumer.eventCallback.configError");
+            $message = sprintf("consumer.kafka.message.eventCallback.configError");
             $this->getConsumeFailLog()->error($message, ['$callback' => $callback]);
             $this->getLog()->error($message, ['$callback' => $callback]);
             EventCallbackConfigException::eventCallbackConfig();
@@ -161,23 +165,23 @@ class KafkaAutoCommitConsumer extends ConsumerAbstract
         $eventResult = call_user_func_array($callback, [$event]);
         // 5. 检测事件返回值是不是EventResultInterface的实例，记录失败和异常日志
         if (!($eventResult instanceof EventResultInterface)) {
-            $message = sprintf("consumer.eventResult.instanceError");
-            $this->getConsumeFailLog()->error($eventResult, ['$eventResult' => $eventResult]);
+            $message = sprintf("consumer.kafka.message.eventResult.instanceError");
+            $this->getConsumeFailLog()->error($message, ['$eventResult' => $eventResult]);
             $this->getLog()->error($message, ['$eventResult' => $eventResult]);
             EventResultInstanceException::eventResultInstance();
         }
     
         // 6. 检测如果执行失败需要退出程序
         if ($eventResult->isFailExit()) {
-            $message = sprintf("consumer.eventResult.isFailExit");
+            $message = sprintf("consumer.kafka.message.eventResult.isFailExit");
             $this->getConsumeFailLog()->error($message, ['$eventResult' => $eventResult]);
             $this->getLog()->error($message, ['$eventResult' => $eventResult]);
             die();
         }
         // 7. 如果执行事件失败就记录失败日志
         if (!$eventResult->isSuccess()) {
-            $message = sprintf("consumer.eventResult.isFail");
-            $this->getConsumeFailLog()->error($eventResult, ['$eventResult' => $eventResult]);
+            $message = sprintf("consumer.kafka.message.eventResult.isFail");
+            $this->getConsumeFailLog()->error($message, ['$eventResult' => $eventResult]);
             $this->getLog()->error($message, ['$eventResult' => $eventResult]);
             EventConsumeFailException::eventConsumeFail('', $event, $eventResult);
         }
@@ -216,7 +220,7 @@ class KafkaAutoCommitConsumer extends ConsumerAbstract
     {
         switch ($message->err) {
             case RD_KAFKA_RESP_ERR_NO_ERROR:
-                return $this->consumerQueue->commit($message);
+                // return $this->consumerQueue->commit($message);
                 break;
             case RD_KAFKA_RESP_ERR__PARTITION_EOF:// 没有消息
                 //                    echo "No more messages; will wait for more\n";

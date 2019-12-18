@@ -24,6 +24,8 @@ class KafkaAutoCommitConnection extends KafkaAbstractConnection
     {
         $rdKafkaConfig = parent::connection();
         $rdKafkaConfig->set('enable.auto.commit', 'true');
+        $rdKafkaConfig->set('offset.store.method', 'broker');// offset保存在broker上
+        $rdKafkaConfig->set('metadata.broker.list', implode(',', $this->getConfig()->getBrokers()));
         return $rdKafkaConfig;
     }
     

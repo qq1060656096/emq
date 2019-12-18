@@ -18,6 +18,7 @@ class NotConfigEventCallbackException extends ConsumerBaseException
      * @throws EventResultInstanceException|BaseException
      */
     public static function notConfigEventCallback($additionalMessage = '') {
-        static::rawThrow('not config event callback', $additionalMessage);
+        $code = 0;
+        static::rawThrow('not config event callback', $additionalMessage, $code);
     }
 }

@@ -116,14 +116,14 @@ abstract class KafkaAbstractConnection implements ConnectionInterface
         }
         $rdKafkaConf->setErrorCb(function ($kafka, $err, $reason) use ($consumer, $producer) {
             if ($consumer !== null) {
-                $consumer->getLogger()->error("producer.setErrorCb.callback", [
+                $consumer->getLog()->error("consumer.rdKafka.setErrorCb", [
                     '$kafka' => Helper::varDump($kafka),
                     '$err' => Helper::varDump($err),
                     '$errStr' => rd_kafka_err2str($err),
                     '$reason' => Helper::varDump($reason),
                 ]);
             } else {
-                $producer->getLogger()->error("producer.setErrorCb.callback", [
+                $producer->getLog()->error("producer.rdKafka.setErrorCb.callback", [
                     '$kafka' => Helper::varDump($kafka),
                     '$err' => Helper::varDump($err),
                     '$errStr' => rd_kafka_err2str($err),

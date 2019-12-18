@@ -4,48 +4,17 @@
  * User: zhaoweijie
  * Date: 2019-12-13
  * Time: 14:29
+ *
+ * php examples/consumer/kafkaConsumer.php 消费者名
+ * php examples/consumer/kafkaConsumer.php kafkaAutoCommitConsumer
  */
 include_once dirname(dirname(__DIR__)).'/vendor/autoload.php';
 
-$loggersConfig = [
-    [
-        'name' => 'fileLog',
-        'driver' => 'fileLog',
-        'file' => __DIR__.'/tmp/file1.log',
-    ],
-    [
-        'name' => 'consumeFailFileLog',
-        'driver' => 'consumeFailFileLog',
-        'file' => __DIR__.'/tmp/file1.log',
-    ],
-];
-$connectionsConfig = [
-    'kafkaAutoCommitConnection' => [
-        'name' => 'kafkaAutoCommitConnection',
-        'driver' => 'kafkaAutoCommit',
-        
-    ],
-];
+$consumerName = $argv[1];
 
-
-$consumersConfig = [
-    'kafkaAutoCommitConsumer' => [
-        'name' => 'kafkaAutoCommitConsumer',
-        'queueName' => 'test',
-        'appNameTopics' => [
-            'test'
-        ],
-        'connection' => 'kafkaAutoCommitConnection',
-        'log' => 'fileLog',
-        'consumeEvents' => [
-        
-        ],
-        'consumeFailLog' => 'consumeFailLog',
-        'timeoutMs' => 2000,
-    ],
-];
+$configs = include __DIR__.'/config/kafkaConsumer.config.php';
 $emq = new \Zwei\Emq\Emq();
-\Zwei\Emq\Helper\EmqHelper::addLoggersFromArrayConfig($emq, $loggersConfig);
-\Zwei\Emq\Helper\EmqHelper::addConnectionsFromArrayConfig($emq, $connectionsConfig);
-\Zwei\Emq\Helper\EmqHelper::addConsumersFromArrayConfig($emq, $consumersConfig);
-$emq->getConsumerManager()->get("kafkaAutoCommitConsumer")->scheduleTaskConsume();
+\Zwei\Emq\Helper\EmqHelper::addLoggersFromArrayConfig($emq, $configs['loggers']);
+\Zwei\Emq\Helper\EmqHelper::addConnectionsFromArrayConfig($emq, $configs['connections']);
+\Zwei\Emq\Helper\EmqHelper::addConsumersFromArrayConfig($emq, $configs['consumers']);
+$emq->getConsumerManager()->get($consumerName)->scheduleTaskConsume();

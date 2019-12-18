@@ -17,13 +17,13 @@ abstract class EventAbstract implements EventInterface
     
     /**
      * EventAbstract constructor.
-     * @param $name
-     * @param $data
-     * @param $ip
-     * @param $key
-     * @param $time
+     * @param string $name
+     * @param array $data
+     * @param string $ip
+     * @param integer|null $key
+     * @param integer|null $time
      */
-    public function __construct($name, $data, $ip, $key, $time)
+    public function __construct($name, $data, $ip, $key = null, $time = null)
     {
         $retryCount = 0;
         $this->data = [
@@ -31,7 +31,7 @@ abstract class EventAbstract implements EventInterface
             'key' => $key,
             'eventKey' => $name,
             'data' => $data,
-            'time' => $time,
+            'time' => $time === null ? time() : $time,
             'ip' => $ip,
             'retryCount' => $retryCount,
         ];
@@ -53,7 +53,7 @@ abstract class EventAbstract implements EventInterface
      */
     public function getId()
     {
-        return Arr::get($this->getData(), 'id');
+        return Arr::get($this->data, 'id');
     }
     
     /**
@@ -61,7 +61,7 @@ abstract class EventAbstract implements EventInterface
      */
     public function getKey()
     {
-        return Arr::get($this->getData(), 'key');
+        return Arr::get($this->data, 'key');
     }
     
     /**
@@ -70,16 +70,16 @@ abstract class EventAbstract implements EventInterface
     public function getName()
     {
         // 兼容老板, 老版事件名 eventKey，新版事件名 name
-        $eventName =  Arr::get($this->getData(), 'eventKey');
+        $eventName =  Arr::get($this->data, 'eventKey');
         if (is_null($eventName)) {
-            $eventName =  Arr::get($this->getData(), 'name');
+            $eventName =  Arr::get($this->data, 'name');
         }
         return $eventName;
     }
     
     public function getData()
     {
-        return Arr::get($this->getData(), 'data');
+        return Arr::get($this->data, 'data');
     }
     
     /**
@@ -87,12 +87,12 @@ abstract class EventAbstract implements EventInterface
      */
     public function getTime()
     {
-        return Arr::get($this->getData(), 'time');
+        return Arr::get($this->data, 'time');
     }
     
     public function getIp()
     {
-        return Arr::get($this->getData(), 'ip');
+        return Arr::get($this->data, 'ip');
     }
     
     /**
@@ -101,12 +101,12 @@ abstract class EventAbstract implements EventInterface
      */
     public function addAdditional($additionalItem)
     {
-        return Arr::add($this->getData(), 'additional', $additionalItem);
+        return Arr::add($this->data, 'additional', $additionalItem);
     }
     
     public function getAdditional()
     {
-        return Arr::get($this->getData(), 'additional');
+        return Arr::get($this->data, 'additional');
     }
     
     /**
@@ -142,7 +142,7 @@ abstract class EventAbstract implements EventInterface
      */
     public function getRetryCount()
     {
-        return Arr::get($this->getData(), 'retryCount', 0);
+        return Arr::get($this->data, 'retryCount', 0);
     }
     
     /**
@@ -161,5 +161,21 @@ abstract class EventAbstract implements EventInterface
             //.chr(125);// "}"
             return $uuid;
         }
+    }
+    
+    /**
+     * @param string $jsonStr
+     * @return EventAbstract
+     */
+    public static function jsonToEvent($jsonStr)
+    {
+        $event = new static('', [], '');
+        $event->data = \json_decode($jsonStr, true);
+        return $event;
+    }
+    
+    public function __toString()
+    {
+        return \json_encode($this->data);
     }
 }

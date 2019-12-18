@@ -14,7 +14,7 @@ use Zwei\Emq\Consumer\Config\ConsumerConfig;
 use Zwei\Emq\Consumer\Config\KafkaConsumerConfig;
 use Zwei\Emq\Logger\LoggerManager;
 
-abstract class ConsumerAbstract implements ConsumerInterface
+abstract class KafkaConsumerAbstract implements ConsumerInterface
 {
     /**
      * @var ConnectionManager

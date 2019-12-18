@@ -18,6 +18,7 @@ class EventCallbackConfigException extends ConsumerBaseException
      * @throws EventResultInstanceException|BaseException
      */
     public static function eventCallbackConfig($additionalMessage = '') {
-        static::rawThrow('event callback config', $additionalMessage);
+        $code = 0;
+        static::rawThrow('event callback config', $additionalMessage, $code);
     }
 }

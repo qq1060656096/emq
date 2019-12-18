@@ -19,6 +19,14 @@ class KafkaConnectionConfig extends ConnectionConfig
     }
     
     /**
+     * @return array
+     */
+    public function getBrokers()
+    {
+        return Arr::get($this->data, 'brokers');
+    }
+    
+    /**
      * 配置键
      *
      * @return array
@@ -28,6 +36,7 @@ class KafkaConnectionConfig extends ConnectionConfig
         return [
             'name',
             'driver',
+            'brokers',
             'options',
         ];
     }

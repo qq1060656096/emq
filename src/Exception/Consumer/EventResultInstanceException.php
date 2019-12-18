@@ -18,6 +18,7 @@ class EventResultInstanceException extends ConsumerBaseException
      * @throws EventResultInstanceException|BaseException
      */
     public static function eventResultInstance($additionalMessage = '') {
-        static::rawThrow('event consume result must EventResultInterface instance', $additionalMessage);
+        $code = 0;
+        static::rawThrow('event consume result must EventResultInterface instance', $additionalMessage, $code);
     }
 }
