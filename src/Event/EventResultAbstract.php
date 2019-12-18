@@ -25,7 +25,7 @@ abstract class EventResultAbstract implements EventResultInterface
      * @param int $retryCount
      * @param bool $isFailExit
      */
-    public function __construct($isSuccess = false, $data = [], $isFailExit = false, $retryCount = 0, $retryType = EventResultInterface::RETRY_TYPE_NOW)
+    public function __construct($isSuccess = false, $data = [], $isFailExit = false, $retryCount = 0, $retryType = null)
     {
         $this->setIsSuccess($isSuccess);
         $this->setData($data);
@@ -88,7 +88,7 @@ abstract class EventResultAbstract implements EventResultInterface
      */
     public function getRetryType()
     {
-        return Arr::get($this->data, 'retryType');
+        return Arr::get($this->data, 'retryType', null);
     }
     
     /**

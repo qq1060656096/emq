@@ -15,6 +15,7 @@ use Zwei\Emq\Event\Event;
 use Zwei\Emq\Event\EventInterface;
 use Zwei\Emq\Event\EventResultInterface;
 use Zwei\Emq\Event\RetryEvent;
+use Zwei\Emq\Exception\Consumer\EventConsumeFailExitException;
 use Zwei\Emq\Exception\Consumer\KafkaMessageException;
 use Zwei\Emq\Exception\Consumer\ConsumerBaseException;
 use Zwei\Emq\Exception\Consumer\EventCallbackConfigException;
@@ -101,8 +102,8 @@ class KafkaAutoCommitConsumer extends KafkaConsumerAbstract
             nowRetryLabel:
             return $this->consumeEvent($event);
         } catch (EventConsumeFailException $e) {
-            switch ($e->getEventResult()->getRetryType()) {
-                case EventResultInterface::RETRY_TYPE_NOW:
+            switch (true) {
+                case $e->getEventResult()->retryTypeIsNow():
                     $retryEvent = RetryEvent::toRetryEvent($event);
                     if ($e->getEventResult()->getRetryCount() > $retryEvent->getRetryCount()) {
                         $retryEvent->incrementRetryCount();
@@ -110,7 +111,7 @@ class KafkaAutoCommitConsumer extends KafkaConsumerAbstract
                         goto nowRetryLabel;
                     }
                     break;
-                case EventResultInterface::RETRY_TYPE_APPLICATION_TOPIC:
+                case $e->getEventResult()->retryTypeIsApplicationTopic():
                     $retryEvent = RetryEvent::toRetryEvent($event);
                     if ($e->getEventResult()->getRetryCount() > $retryEvent->getRetryCount()) {
                         $retryEvent->incrementRetryCount();
@@ -122,7 +123,7 @@ class KafkaAutoCommitConsumer extends KafkaConsumerAbstract
                     throw $e;
                     break;
             }
-            $message = sprintf("consumer.kafka.message.eventResult.isFail");
+            $message = sprintf("consumer.kafka.message.eventResult.isFail.retryCountMaximum");
             $errorData = [
                 '$event' => $e->getEvent(),
                 '$eventResult' => $e->getEventResult(),
@@ -175,7 +176,7 @@ class KafkaAutoCommitConsumer extends KafkaConsumerAbstract
             $message = sprintf("consumer.kafka.message.eventResult.isFailExit");
             $this->getConsumeFailLog()->error($message, ['$eventResult' => $eventResult]);
             $this->getLog()->error($message, ['$eventResult' => $eventResult]);
-            die();
+            EventConsumeFailExitException::eventConsumeFailExit('', $event, $eventResult);
         }
         // 7. 如果执行事件失败就记录失败日志
         if (!$eventResult->isSuccess()) {
@@ -254,6 +255,8 @@ class KafkaAutoCommitConsumer extends KafkaConsumerAbstract
             
             } catch (EventCallbackConfigException $e) {// 事件回调失败
             
+            } catch (EventConsumeFailExitException $e) {// 事件消费失败需要退出
+                die('consumer.kafka.message.eventResult.isFailExit');
             } catch (EventConsumeFailException $e) {// 超过最大重试次数
             
             } catch (EventConsumeFailRetryCountMaximumException $e) {// 超过最大重试次数

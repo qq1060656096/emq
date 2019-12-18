@@ -68,7 +68,7 @@ class ConsumerBaseException extends BaseException
      * @throws EventConsumeFailException
      */
     public static function eventCommonThrow($message, $additionalMessage, $code, EventInterface $event = null, EventResultInterface $eventResult) {
-        $obj = new EventConsumeFailException($message.$additionalMessage, $code);
+        $obj = new static($message.$additionalMessage, $code);
         $obj->setEvent($event);
         $obj->setEventResult($eventResult);
         throw $obj;
