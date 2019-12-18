@@ -265,10 +265,10 @@ class KafkaAutoCommitConsumer extends KafkaConsumerAbstract
     
             } catch (ConsumerBaseException $e) {// 消费者异常
                 throw $e;
-            } finally {
-                $this->del($message);
+            } catch (\Exception $e) {
+                throw $e;
             }
-            
+            $this->del($message);
         }
     }
 }

@@ -14,7 +14,7 @@
     }
   ],
   "require": {
-    "php": ">=5.5",
+    "php": ">=5.4",
     "monolog/monolog": "~1"
   },
   "require-dev": {
@@ -31,6 +31,6 @@
     ]
   },
   "suggest": {
-    "php": "Required to php >=(5.5)."
+    "php": "Required to php >=(5.4)."
   }
 }
