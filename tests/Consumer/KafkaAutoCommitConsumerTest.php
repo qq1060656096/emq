@@ -350,9 +350,111 @@ class KafkaAutoCommitConsumerTest extends TestCase
         
     }
     
-    
-    public function testConsumeRetry()
+    /**
+     * 事件消费时事件返回值错误
+     *
+     * @expectedException Zwei\Emq\Exception\Consumer\EventResultInstanceException
+     */
+    public function testConsumeKafkaMessageEventResultInstanceException()
     {
+        $thisObj = $this;
+        $config = [
+            'consumeEvents' => [
+                'TEST_EVENT' => function(Event $event) use ($thisObj) {
+                    $this->assertEquals('TEST_EVENT', $event->getName());
+                    $this->assertEquals(1, $event->getData()['id']);
+                    $eventResult = new EventResult();
+                    $eventResult->setIsSuccess(true);
+                    return null;
+                }
+            ],
+        ];
+        $logCount = 0;
+        $getLog = $this->createMockLogger([
+            'info' => function($message, array $context = array()) use($thisObj, &$logCount) {
+                $logCount ++;
+                if ($logCount == 1) {
+                    $thisObj->assertEquals('consumer.kafka.message.noError', $message);
+                }
+            },
+            'error' => function($message, array $context = array()) use($thisObj) {
+                $thisObj->assertEquals('consumer.kafka.message.eventResult.instanceError', $message);
+            },
+        ]);
+        $getConsumeFailLog = $this->createMockLogger([
+            'info' => function($message, array $context = array()) use($thisObj) {
+                $thisObj->assertEquals('', $message);
+            },
+            'error' => function($message, array $context = array()) use($thisObj) {
+                $thisObj->assertEquals('consumer.kafka.message.eventResult.instanceError', $message);
+            },
+        ]);
     
+        $methods = [
+            'getLog' => $getLog,
+            'getConsumeFailLog' => $getConsumeFailLog,
+        ];
+        $consumer = $this->createMockerKafkaAutoCommitConsumer($config, $methods);
+        $event = new Event('TEST_EVENT', ['id' => 1]);
+        $message = new \RdKafka\Message();
+        $message->err = RD_KAFKA_RESP_ERR_NO_ERROR;
+        $message->payload = (string)$event;
+        /* @var EventResultAbstract $eventResult*/
+        list ($event, $eventResult) = $consumer->consume($message);
+        $this->assertEquals(true, $eventResult->isSuccess());
+    }
+    
+    /**
+     * 事件消费时事件消费失败异常
+     *
+     * @expectedException Zwei\Emq\Exception\Consumer\EventConsumeFailException
+     */
+    public function testConsumeKafkaMessageEventConsumeFailException()
+    {
+        $thisObj = $this;
+        $config = [
+            'consumeEvents' => [
+                'TEST_EVENT' => function(Event $event) use ($thisObj) {
+                    $this->assertEquals('TEST_EVENT', $event->getName());
+                    $this->assertEquals(1, $event->getData()['id']);
+                    $eventResult = new EventResult();
+                    $eventResult->setIsSuccess(false);
+                    return $eventResult;
+                }
+            ],
+        ];
+        $logCount = 0;
+        $getLog = $this->createMockLogger([
+            'info' => function($message, array $context = array()) use($thisObj, &$logCount) {
+                $logCount ++;
+                if ($logCount == 1) {
+                    $thisObj->assertEquals('consumer.kafka.message.noError', $message);
+                }
+            },
+            'error' => function($message, array $context = array()) use($thisObj) {
+                $thisObj->assertEquals('consumer.kafka.message.eventResult.isFail', $message);
+            },
+        ]);
+        $getConsumeFailLog = $this->createMockLogger([
+            'info' => function($message, array $context = array()) use($thisObj) {
+                $thisObj->assertEquals('', $message);
+            },
+            'error' => function($message, array $context = array()) use($thisObj) {
+                $thisObj->assertEquals('consumer.kafka.message.eventResult.isFail', $message);
+            },
+        ]);
+        
+        $methods = [
+            'getLog' => $getLog,
+            'getConsumeFailLog' => $getConsumeFailLog,
+        ];
+        $consumer = $this->createMockerKafkaAutoCommitConsumer($config, $methods);
+        $event = new Event('TEST_EVENT', ['id' => 1]);
+        $message = new \RdKafka\Message();
+        $message->err = RD_KAFKA_RESP_ERR_NO_ERROR;
+        $message->payload = (string)$event;
+        /* @var EventResultAbstract $eventResult*/
+        list ($event, $eventResult) = $consumer->consume($message);
+        $this->assertEquals(true, $eventResult->isSuccess());
     }
 }
