@@ -43,7 +43,7 @@ return [
             'appNameTopics' => [
                 'test6'
             ],
-            'connection' => 'kafkaAutoCommitConnection',
+            'connectionName' => 'kafkaAutoCommitConnection',
             'log' => 'kafkaAutoCommitConsumer.fileLog',
             'consumeEvents' => [
                 'TEST' => function(\Zwei\Emq\Event\Event $event) {

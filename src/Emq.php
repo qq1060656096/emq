@@ -139,8 +139,8 @@ class Emq
      */
     public function addConsumer(ConsumerConfig $config)
     {
-        $connection = $config->getConnection();
-        $consumer = $this->getConnectionManager()->get($config->getConnection())->createConsumer($config);
+        $connectionName = $config->getConnectionName();
+        $consumer = $this->getConnectionManager()->get($connectionName)->createConsumer($config);
         $consumer->setConnectionManager($this->getConnectionManager());
         $consumer->setLoggerManager($this->getLoggerManager());
         $this->getConsumerManager()->add($consumer);
