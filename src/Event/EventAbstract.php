@@ -23,8 +23,9 @@ abstract class EventAbstract implements EventInterface
      * @param integer|null $key
      * @param integer|null $time
      */
-    public function __construct($name, $data, $ip, $key = null, $time = null)
+    public function __construct($name, $data, $ip = null, $key = null, $time = null)
     {
+        $ip = $ip === null || $ip === '' ? '127.0.0.1' : $ip;
         $retryCount = 0;
         $this->data = [
             'id' => $this->generateId($ip),

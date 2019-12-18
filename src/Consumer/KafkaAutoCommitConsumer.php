@@ -50,7 +50,7 @@ class KafkaAutoCommitConsumer extends KafkaConsumerAbstract
     
     /**
      * @param $message
-     * @return array
+     * @return array [$event, $eventResult]
      * @throws EventConsumeFailRetryCountMaximumException
      * @throws EventResultInstanceException
      * @throws \Zwei\Emq\Exception\BaseException
@@ -65,14 +65,14 @@ class KafkaAutoCommitConsumer extends KafkaConsumerAbstract
             case RD_KAFKA_RESP_ERR_NO_ERROR:
                 $payload = $message->payload;
                 $errorMessage = sprintf("consumer.kafka.message.noError");
-                $this->getLog()->error($errorMessage, [
+                $this->getLog()->info($errorMessage, [
                     '$message' => $message,
                 ]);
             break;
             case RD_KAFKA_RESP_ERR__PARTITION_EOF:// 没有消息
                 //                    echo "No more messages; will wait for more\n";
                 $errorMessage = sprintf("consumer.kafka.message.noMoreMessage");
-                $this->getLog()->error($errorMessage, [
+                $this->getLog()->info($errorMessage, [
                     '$message' => $message,
                     'errstrs' => $message->errstr(),
                 ]);
@@ -81,7 +81,7 @@ class KafkaAutoCommitConsumer extends KafkaConsumerAbstract
             case RD_KAFKA_RESP_ERR__TIMED_OUT:// 超时
                 //                    echo "Timed out\n";
                 $errorMessage = sprintf("consumer.kafka.message.timeout");
-                $this->getLog()->error($errorMessage, [
+                $this->getLog()->info($errorMessage, [
                     '$message' => $message,
                     'errstrs' => $message->errstr(),
                 ]);
@@ -135,7 +135,7 @@ class KafkaAutoCommitConsumer extends KafkaConsumerAbstract
     
     /**
      * @param EventInterface $event
-     * @return array
+     * @return array [$event, $eventResult]
      * @throws EventConsumeFailException
      * @throws EventResultInstanceException
      * @throws \Zwei\Emq\Exception\BaseException
