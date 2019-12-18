@@ -22,7 +22,7 @@ class RetryEvent extends EventAbstract
     {
         $retryCount = $this->getRetryCount();
         $retryCount ++;
-        return Arr::set($this->getData(), 'retryCount', $retryCount);
+        return Arr::set($this->data, 'retryCount', $retryCount);
     }
     
     /**
@@ -31,7 +31,7 @@ class RetryEvent extends EventAbstract
      */
     public static function toRetryEvent(EventAbstract $eventAbstract)
     {
-        $obj = new RetryEvent('', [], '');
+        $obj = new RetryEvent('', []);
         $obj->data = $eventAbstract->data;
         return $obj;
     }
@@ -41,7 +41,7 @@ class RetryEvent extends EventAbstract
      */
     public function toEvent()
     {
-        $event = new Event();
+        $event = new Event('', []);
         $event->data = $this->data;
         return $event;
     }
