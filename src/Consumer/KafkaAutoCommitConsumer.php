@@ -150,13 +150,12 @@ class KafkaAutoCommitConsumer extends KafkaConsumerAbstract
         
         $callback = $this->getConsumeEvent($event->getName());
         if (is_null($callback)) {
-            $message = sprintf("consumer.kafka.message.eventResult.isFailExit");
-            $this->getLog()->error($message, ['$callback' => $callback]);
+            $message = sprintf("consumer.kafka.message.noConfig");
+            $this->getLog()->info($message, ['$callback' => $callback]);
             NotConfigEventCallbackException::notConfigEventCallback();
         }
-    
         if (!is_callable($callback)) {
-            $message = sprintf("consumer.kafka.message.eventCallback.configError");
+            $message = sprintf("consumer.kafka.message.configError");
             $this->getConsumeFailLog()->error($message, ['$callback' => $callback]);
             $this->getLog()->error($message, ['$callback' => $callback]);
             EventCallbackConfigException::eventCallbackConfig();

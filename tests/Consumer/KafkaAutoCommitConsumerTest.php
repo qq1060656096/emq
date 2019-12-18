@@ -17,6 +17,7 @@ use Zwei\Emq\Event\Event;
 use Zwei\Emq\Event\EventResult;
 use Zwei\Emq\Event\EventResultAbstract;
 use Zwei\Emq\Exception\Consumer\KafkaMessageException;
+use Zwei\Emq\Exception\Consumer\NotConfigEventCallbackException;
 use Zwei\Emq\Tests\SuperMockerEntity;
 use Zwei\Emq\Tests\SuperMockerTrait;
 
@@ -39,7 +40,7 @@ class KafkaAutoCommitConsumerTest extends TestCase
         $entity->setClassName(KafkaAutoCommitConsumer::class);
         $entity->setMethods([
             'getLog' => null,
-            'consumeFailLog' => null,
+            'getConsumeFailLog' => null,
         ]);
         $entity->addMethods($methods);
         return $this->createSuperMocker($entity, [$consumerConfig]);
@@ -80,7 +81,7 @@ class KafkaAutoCommitConsumerTest extends TestCase
                 $thisObj->assertEquals('', $message);
             },
         ]);
-        $consumeFailLog = $this->createMockLogger([
+        $getConsumeFailLog = $this->createMockLogger([
             'info' => function($message, array $context = array()) use($thisObj) {
                 $thisObj->assertEquals('', $message);
             },
@@ -91,7 +92,7 @@ class KafkaAutoCommitConsumerTest extends TestCase
         
         $methods = [
             'getLog' => $getLog,
-            'consumeFailLog' => $consumeFailLog,
+            'getConsumeFailLog' => $getConsumeFailLog,
         ];
         $consumer = $this->createMockerKafkaAutoCommitConsumer($config, $methods);
         $message = new \RdKafka\Message();
@@ -122,7 +123,7 @@ class KafkaAutoCommitConsumerTest extends TestCase
                 $thisObj->assertEquals('', $message);
             },
         ]);
-        $consumeFailLog = $this->createMockLogger([
+        $getConsumeFailLog = $this->createMockLogger([
             'info' => function($message, array $context = array()) use($thisObj) {
                 $thisObj->assertEquals('', $message);
             },
@@ -133,7 +134,7 @@ class KafkaAutoCommitConsumerTest extends TestCase
         
         $methods = [
             'getLog' => $getLog,
-            'consumeFailLog' => $consumeFailLog,
+            'getConsumeFailLog' => $getConsumeFailLog,
         ];
         $consumer = $this->createMockerKafkaAutoCommitConsumer($config, $methods);
         $message = new \RdKafka\Message();
@@ -164,7 +165,7 @@ class KafkaAutoCommitConsumerTest extends TestCase
                 $thisObj->assertEquals('consumer.kafka.message.error', $message);
             },
         ]);
-        $consumeFailLog = $this->createMockLogger([
+        $getConsumeFailLog = $this->createMockLogger([
             'info' => function($message, array $context = array()) use($thisObj) {
                 $thisObj->assertEquals('', $message);
             },
@@ -175,7 +176,7 @@ class KafkaAutoCommitConsumerTest extends TestCase
         
         $methods = [
             'getLog' => $getLog,
-            'consumeFailLog' => $consumeFailLog,
+            'getConsumeFailLog' => $getConsumeFailLog,
         ];
         $consumer = $this->createMockerKafkaAutoCommitConsumer($config, $methods);
         $message = new \RdKafka\Message();
@@ -215,7 +216,7 @@ class KafkaAutoCommitConsumerTest extends TestCase
                 $thisObj->assertEquals('', $message);
             },
         ]);
-        $consumeFailLog = $this->createMockLogger([
+        $getConsumeFailLog = $this->createMockLogger([
             'info' => function($message, array $context = array()) use($thisObj) {
                 $thisObj->assertEquals('', $message);
             },
@@ -226,7 +227,7 @@ class KafkaAutoCommitConsumerTest extends TestCase
     
         $methods = [
             'getLog' => $getLog,
-            'consumeFailLog' => $consumeFailLog,
+            'getConsumeFailLog' => $getConsumeFailLog,
         ];
         $consumer = $this->createMockerKafkaAutoCommitConsumer($config, $methods);
         $event = new Event('TEST_EVENT', ['id' => 1]);
@@ -242,10 +243,113 @@ class KafkaAutoCommitConsumerTest extends TestCase
         }
     }
     
-    public function testConsumeFail()
+    /**
+     * 测试消费时没有配置事件异常
+     *
+     * @expectedException \Zwei\Emq\Exception\Consumer\NotConfigEventCallbackException
+     */
+    public function testConsumeKafkaMessageNotConfigEventCallbackException()
     {
+        $thisObj = $this;
+        $config = [
+            'consumeEvents' => [
+                'TEST_EVENT' => function(Event $event) use ($thisObj) {
+                    $this->assertEquals('TEST_EVENT', $event->getName());
+                    $this->assertEquals(1, $event->getData()['id']);
+                    $eventResult = new EventResult();
+                    $eventResult->setIsSuccess(true);
+                    return $eventResult;
+                }
+            ],
+        ];
+        $logCount = 0;
+        $getLog = $this->createMockLogger([
+            'info' => function($message, array $context = array()) use($thisObj, &$logCount) {
+                $logCount ++;
+                if ($logCount == 1) {
+                    $thisObj->assertEquals('consumer.kafka.message.noError', $message);
+                } else if ($logCount == 2) {
+                    $thisObj->assertEquals('consumer.kafka.message.noConfig', $message);
+                }
+            },
+            'error' => function($message, array $context = array()) use($thisObj) {
+                $thisObj->assertEquals('', $message);
+            },
+        ]);
+        $getConsumeFailLog = $this->createMockLogger([
+            'info' => function($message, array $context = array()) use($thisObj) {
+                $thisObj->assertEquals('', $message);
+            },
+            'error' => function($message, array $context = array()) use($thisObj) {
+                $thisObj->assertEquals('', $message);
+            },
+        ]);
     
+        $methods = [
+            'getLog' => $getLog,
+            'getConsumeFailLog' => $getConsumeFailLog,
+        ];
+        $consumer = $this->createMockerKafkaAutoCommitConsumer($config, $methods);
+        $event = new Event('TEST_EVENT_NO_CONFIG', ['id' => 1]);
+        $message = new \RdKafka\Message();
+        $message->err = RD_KAFKA_RESP_ERR_NO_ERROR;
+        $message->payload = (string)$event;
+        /* @var EventResultAbstract $eventResult*/
+        list ($event, $eventResult) = $consumer->consume($message);
+        $this->assertEquals(true, $eventResult->isSuccess());
+        
     }
+    
+    
+    /**
+     * 测试消费时没有配置事件callback错误
+     *
+     * @expectedException \Zwei\Emq\Exception\Consumer\EventCallbackConfigException
+     */
+    public function testConsumeKafkaMessageEventCallbackConfigException()
+    {
+        $thisObj = $this;
+        $config = [
+            'consumeEvents' => [
+                'TEST_EVENT' => 1
+            ],
+        ];
+        $logCount = 0;
+        $getLog = $this->createMockLogger([
+            'info' => function($message, array $context = array()) use($thisObj, &$logCount) {
+                $logCount ++;
+                if ($logCount == 1) {
+                    $thisObj->assertEquals('consumer.kafka.message.noError', $message);
+                }
+            },
+            'error' => function($message, array $context = array()) use($thisObj) {
+                $thisObj->assertEquals('consumer.kafka.message.configError', $message);
+            },
+        ]);
+        $getConsumeFailLog = $this->createMockLogger([
+            'info' => function($message, array $context = array()) use($thisObj) {
+                $thisObj->assertEquals('', $message);
+            },
+            'error' => function($message, array $context = array()) use($thisObj) {
+                $thisObj->assertEquals('consumer.kafka.message.configError', $message);
+            },
+        ]);
+        
+        $methods = [
+            'getLog' => $getLog,
+            'getConsumeFailLog' => $getConsumeFailLog,
+        ];
+        $consumer = $this->createMockerKafkaAutoCommitConsumer($config, $methods);
+        $event = new Event('TEST_EVENT', ['id' => 1]);
+        $message = new \RdKafka\Message();
+        $message->err = RD_KAFKA_RESP_ERR_NO_ERROR;
+        $message->payload = (string)$event;
+        /* @var EventResultAbstract $eventResult*/
+        list ($event, $eventResult) = $consumer->consume($message);
+        $this->assertEquals(true, $eventResult->isSuccess());
+        
+    }
+    
     
     public function testConsumeRetry()
     {
